@@ -1,3 +1,8 @@
+module Easy21
+
+export NonTerminalState, TerminalState, State, step, get_random_initial_pair,
+       get_all_nonterminal_states, get_all_terminal_states, get_all_states
+
 struct NonTerminalState
     dealer_first_card::Int
     player_sum::Int
@@ -63,6 +68,8 @@ function step(s::NonTerminalState, a::Action)::Tuple{State, Reward}
     end
 end
 
+step(s::TerminalState, ::Action)::Tuple{State, Reward} = (s, 0)
+
 function interactive_play()
     state = NonTerminalState(draw_black_card(), draw_black_card())
     sum_reward = 0
@@ -90,7 +97,7 @@ end
 
 function gen_episode(policy)
     state, action = get_random_initial_pair()
-    states = Vector{NonTerminalState}([state])
+    states = Vector{State}([state])
     actions = Vector{Action}([action])
     rewards = []
     while true
@@ -104,4 +111,20 @@ function gen_episode(policy)
         push!(actions, action)
     end
     return states, actions, rewards
+end
+
+function get_all_nonterminal_states()
+    [NonTerminalState(x,y) for x in 1:10 for y in 1:10]
+end
+
+function get_all_terminal_states()
+    [TerminalState(x,y) for x in -9:31 for y in -9:31]
+end
+
+function get_all_states()
+    vcat(get_all_nonterminal_states(), get_all_terminal_states())
+end
+
+get_available_actions(::State) = [HIT, STICK]
+
 end

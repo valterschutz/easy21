@@ -2,21 +2,22 @@ using Statistics
 using Plots; pythonplot()
 using ProgressBars
 using LaTeXStrings
+using DataStructures
 
 include("easy21.jl")
 
 # Count how many times we visit each state
-Ns = Dict{State, Int}()
+Ns = DefaultDict{State, Int}(0)
 
 # Also count how many times we visit state-action pairs
-Nsa = Dict{StateAction, Int}()
+Nsa = DefaultDict{StateAction, Int}(0)
 
 # epsilon-greedy
 N0 = 100_000
-epsilon(s) = N0/(N0+get(Ns,s,1))
+epsilon(s) = N0/(N0+Ns[s])
 
 # Action value function
-Q = Dict{StateAction, Float64}()
+Q = DefaultDict{StateAction, Float64}(0)
 
 # Policy
 function P(state)
@@ -37,7 +38,7 @@ end
 gamma = 1
 
 # List of returns for each state/action pair
-returns = Dict{StateAction, Vector{Int}}()
+returns = DefaultDict{StateAction, Vector{Int}}([])
 
 # Loop through each episode
 for i in tqdm(1:1_000_000)
@@ -55,19 +56,19 @@ for i in tqdm(1:1_000_000)
     for t = reverse(1:T)
         state_action = state_actions[t]
         state, action = state_action
-        # Count how many times we have visited this state and state/action pair
-        Ns[state] = get(Ns, state, 0) + 1
-        Nsa[state_action] = get(Nsa, state_action, 0) + 1
         G = gamma*G + rewards[t]
         # If this is the first occurence of the state/action pair
         # during this episode
         if !(state_action in state_actions[1:t-1])
             # Append return to this state action pair
-            state_action_returns = get(returns, state_action, [])
+            state_action_returns = returns[state_action]
             push!(state_action_returns, G)
+            # Count how many times we have first-visited this state and state/action pair
+            Ns[state] += 1
+            Nsa[state_action] += 1
 
             # Update action value function, also automatically updates policy
-            Q[state_action] = get(Q,state_action,0) + (G-get(Q,state_action,0))/get(Nsa,state_action,1)
+            Q[state_action] += (G-Q[state_action])/Nsa[state_action]
         end
     end
 end
